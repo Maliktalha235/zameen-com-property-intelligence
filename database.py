@@ -5,14 +5,14 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def get_connection():
-    conn=mysql.connector.connect(
+    return mysql.connector.connect(
         host=os.getenv("DB_HOST"),
         user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASS"),
+        password=os.getenv("DB_PASSWORD"),
         database=os.getenv("DB_NAME"),
+        port=int(os.getenv("DB_PORT", 3306)),
         auth_plugin="mysql_native_password"
     )
-    return conn
 
 def create_table():
     conn=get_connection()
