@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Zameen Property Assistant</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: #1a1a1a;
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Sidebar */
+        #sidebar {
+            width: 260px;
+            background-color: #111;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            border-right: 1px solid #333;
+        }
+
+        #sidebar h2 {
+            color: #ff6600;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        #new-chat-btn {
+            background-color: #ff6600;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            width: 100%;
+        }
+
+        #new-chat-btn:hover { background-color: #cc5200; }
+
+        .history-item {
+            background-color: #2d2d2d;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #ccc;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .history-item:hover { background-color: #3d3d3d; }
+        .history-item.active { border-left: 3px solid #ff6600; }
+
+        /* Main chat area */
+        #main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #ff6600;
+            font-size: 26px;
+            margin-bottom: 20px;
+        }
+
+        #chat-box {
+            width: 100%;
+            max-width: 800px;
+            flex: 1;
+            background-color: #2d2d2d;
+            border-radius: 10px;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        #input-area {
+            display: flex;
+            width: 100%;
+            max-width: 800px;
+            gap: 10px;
+        }
+
+        #user-input {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            background-color: #2d2d2d;
+            color: white;
+            font-size: 15px;
+        }
+
+        #user-input:focus { outline: 1px solid #ff6600; }
+
+        #send-btn {
+            padding: 12px 24px;
+            background-color: #ff6600;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+        }
+
+        #send-btn:hover { background-color: #cc5200; }
+
+        .bot-message {
+            background-color: #3d3d3d;
+            padding: 10px 13px;
+            border-radius: 8px;
+            max-width: 75%;
+            align-self: flex-start;
+            line-height: 1.4;
+            white-space: normal;
+            text-align: left;
+        }
+
+        .user-message {
+            background-color: #ff6600;
+            padding: 12px 16px;
+            border-radius: 10px;
+            max-width: 75%;
+            align-self: flex-end;
+            line-height: 1.6;
+        }
+
+        .typing {
+            background-color: #3d3d3d;
+            padding: 12px 16px;
+            border-radius: 10px;
+            max-width: 75%;
+            align-self: flex-start;
+            color: #aaa;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar with chat history -->
+    <div id="sidebar">
+        <h2>🏠 Zameen Assistant</h2>
+        <button id="new-chat-btn" onclick="startNewChat()">+ New Chat</button>
+        <div id="history-list"></div>
+    </div>
+
+    <!-- Main chat -->
+    <div id="main">
+        <h1>Pakistan Property Assistant</h1>
+
+        <div id="chat-box">
+            <div class="bot-message">
+                Hi! I'm your Pakistan property expert. Ask me anything about properties in Lahore, Karachi or Islamabad.
+                <br><br>
+                Try:<br>
+                • "Good deals in DHA Lahore under 3 crore"<br>
+                • "5 marla houses in Islamabad"<br>
+                • "What is average price in Bahria Town?"
+            </div>
+        </div>
+
+        <div id="input-area">
+            <input type="text" id="user-input" placeholder="Ask about properties...">
+            <button id="send-btn" onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+<script>
+    // Stores all chats: [{id, title, messages: [{role, content}]}]
+    let allChats = JSON.parse(localStorage.getItem("zameen_chats") || "[]");
+    let currentChatId = null;
+    let conversationHistory = [];
+
+    // Load history on page load
+    window.onload = function() {
+        renderHistoryList();
+        if (allChats.length > 0) {
+            loadChat(allChats[0].id);
+        }
+    }
+
+    function startNewChat() {
+        // Save current chat if exists
+        saveCurrentChat();
+
+        // Reset
+        currentChatId = Date.now().toString();
+        conversationHistory = [];
+        document.getElementById("chat-box").innerHTML = `
+            <div class="bot-message">
+                Hi! I'm your Pakistan property expert. Ask me anything!
+            </div>`;
+        renderHistoryList();
+    }
+
+    function saveCurrentChat() {
+        if (!currentChatId || conversationHistory.length === 0) return;
+
+        const existing = allChats.find(c => c.id === currentChatId);
+        const title = conversationHistory[0]?.content?.substring(0, 40) || "New Chat";
+
+        if (existing) {
+            existing.messages = conversationHistory;
+            existing.html = document.getElementById("chat-box").innerHTML;
+        } else {
+            allChats.unshift({
+                id: currentChatId,
+                title: title,
+                messages: conversationHistory,
+                html: document.getElementById("chat-box").innerHTML
+            });
+        }
+
+        localStorage.setItem("zameen_chats", JSON.stringify(allChats));
+        renderHistoryList();
+    }
+
+    function loadChat(chatId) {
+        saveCurrentChat();
+        const chat = allChats.find(c => c.id === chatId);
+        if (!chat) return;
+
+        currentChatId = chatId;
+        conversationHistory = chat.messages || [];
+        document.getElementById("chat-box").innerHTML = chat.html || "";
+
+        // Highlight active
+        document.querySelectorAll(".history-item").forEach(el => {
+            el.classList.remove("active");
+            if (el.dataset.id === chatId) el.classList.add("active");
+        });
+    }
+
+    function renderHistoryList() {
+    const list = document.getElementById("history-list");
+    list.innerHTML = "";
+    allChats.forEach(chat => {
+        const div = document.createElement("div");
+        div.className = "history-item" + (chat.id === currentChatId ? " active" : "");
+        div.dataset.id = chat.id;
+        div.style.display = "flex";
+        div.style.justifyContent = "space-between";
+        div.style.alignItems = "center";
+
+        // Chat title
+        const title = document.createElement("span");
+        title.innerText = chat.title;
+        title.style.flex = "1";
+        title.style.overflow = "hidden";
+        title.style.textOverflow = "ellipsis";
+        title.onclick = () => loadChat(chat.id);
+
+        // Delete button
+        const deleteBtn = document.createElement("span");
+        deleteBtn.innerText = "🗑";
+        deleteBtn.style.cursor = "pointer";
+        deleteBtn.style.marginLeft = "8px";
+        deleteBtn.style.opacity = "0.6";
+        deleteBtn.title = "Delete chat";
+        deleteBtn.onclick = (e) => {
+            e.stopPropagation(); // prevent loading chat when deleting
+            deleteChat(chat.id);
+        };
+
+        div.appendChild(title);
+        div.appendChild(deleteBtn);
+        list.appendChild(div);
+    });
+}
+
+function deleteChat(chatId) {
+    // Remove from array
+    allChats = allChats.filter(c => c.id !== chatId);
+    localStorage.setItem("zameen_chats", JSON.stringify(allChats));
+
+    // If deleted current chat — start fresh
+    if (chatId === currentChatId) {
+        currentChatId = null;
+        conversationHistory = [];
+        document.getElementById("chat-box").innerHTML = `
+            <div class="bot-message">
+                Hi! Ask me anything about properties in Pakistan.
+            </div>`;
+    }
+
+    renderHistoryList();
+    }
+
+    async function sendMessage() {
+        const input = document.getElementById("user-input");
+        const question = input.value.trim();
+        if (!question) return;
+
+        // Initialize chat if first message
+        if (!currentChatId) {
+            currentChatId = Date.now().toString();
+        }
+
+        addMessage(question, "user");
+        input.value = "";
+
+        // Add typing indicator
+        const typing = document.createElement("div");
+        typing.className = "typing";
+        typing.id = "typing";
+        typing.innerText = "Bot is thinking...";
+        document.getElementById("chat-box").appendChild(typing);
+        document.getElementById("chat-box").scrollTop = 99999;
+
+        // Add to history
+        conversationHistory.push({role: "user", content: question});
+
+        try {
+            const response = await fetch("http://127.0.0.1:8000/chat", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    question: question,
+                    history: conversationHistory.slice(0, -1) // send history without current
+                })
+            });
+
+            const data = await response.json();
+            document.getElementById("typing").remove();
+
+            const answer = data.answer || data.error || "Something went wrong";
+            addMessage(answer, "bot");
+
+            // Add bot response to history
+            conversationHistory.push({role: "assistant", content: answer});
+
+            // Save chat
+            saveCurrentChat();
+
+        } catch (error) {
+            document.getElementById("typing").remove();
+            addMessage("Error connecting to server. Make sure API is running.", "bot");
+        }
+    }
+
+    function addMessage(text, sender) {
+        const chatBox = document.getElementById("chat-box");
+        const div = document.createElement("div");
+        div.className = sender === "user" ? "user-message" : "bot-message";
+        div.innerText = text;
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    document.getElementById("user-input").addEventListener("keypress", function(e) {
+        if (e.key === "Enter") sendMessage();
+    });
+</script>
+
+</body>
+</html>
+
+
+<!-- <html>
+<head>
+    <title>Zameen Property Assistant</title>
+    <style>
+        /*whole page styling*/
+        body {
+            background-color: #1a1a1a;
+            color: white;
+            font-family: Arial, Helvetica, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        /*header*/
+        h1{
+            color: #ff6600;
+            font-size: 30px;
+            margin-bottom: 24px;
+        }
+        /*Chatbox*/
+        #chat-box{
+            width: 800px;
+            height: 500px;
+            background-color: #2d2d2d;
+            border-radius: 10px;
+            padding: 20px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+
+        /*Input area*/
+        #input-area{
+            display: flex;
+            width: 800px;
+            gap: 10px;
+        }
+        /*input text*/
+        #user-input{
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            background-color: #2d2d2d;
+            color: white;
+            font-size: 16px;
+        }
+        /*send button */
+        button{
+            padding: 12px 24px;
+            background-color: #ff6600;
+            color:white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover{
+            background-color: #cc5200;
+        }
+        /*Bot bubble message*/
+        .bot-message{
+            background-color: #3d3d3d;
+            padding: 10px 15px;
+            border-radius: 10px;
+            margin: 8px 0;
+            max-width: 70%;
+            align-self: flex-start;
+        }
+         /* User message bubble */
+        .user-message {
+            background-color: #ff6600;
+            padding: 10px 15px;
+            border-radius: 10px;
+            margin: 8px 0;
+            max-width: 70%;
+            align-self: flex-end;
+            margin-left: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Zameen Property Assistant</h1>
+    <div id="chat-box" style="display: flex; flex-direction: column;">
+        <div class="bot-message">Hi! Ask me anything about properties in Pakistan.
+            Try: "Good deals in DHA Lahore" or "5 marla houses in Islamabad"
+        </div>
+    </div>
+    <div id="input-area">
+        <input type="text" id="user-input" placeholder="Ask about properties...">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+    <script>
+    async function sendMessage() {
+        const input = document.getElementById("user-input");
+        const question = input.value.trim();
+        if (!question) return;
+
+        addMessage(question, "user");
+        input.value = "";
+        addMessage("Bot is thinking...", "bot", "typing");
+
+        try {
+            const response = await fetch(`http://127.0.0.1:8000/chat?question=${encodeURIComponent(question)}`);
+            const data = await response.json();
+            document.getElementById("typing").remove();
+            addMessage(data.answer, "bot");
+        } catch (error) {
+            document.getElementById("typing").remove();
+            addMessage("Error connecting to server. Make sure API is running.", "bot");
+            console.log("Error:", error);
+        }
+    }
+
+    function addMessage(text, sender, id = "") {
+        const chatBox = document.getElementById("chat-box");
+        const div = document.createElement("div");
+        div.className = sender === "user" ? "user-message" : "bot-message";
+        if (id) div.id = id;
+        div.innerText = text;
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        document.getElementById("user-input").addEventListener("keypress", function(e) {
+            if (e.key === "Enter") sendMessage();
+        });
+    });
+</script>
+</body>
+</html> -->
