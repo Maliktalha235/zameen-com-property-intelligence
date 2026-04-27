@@ -17,9 +17,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
-@app.get("/app")
-def serve_ui():
-    return FileResponse("templates/index.html")
 
 class Message(BaseModel):
     role: str
@@ -45,6 +42,12 @@ def fetch_data(query,params=None):
 def home():
     return{ "message":"Zameen property Intelligence API",
            "endpoints":["/properties", "/search", "/stats", "/city", "/deals", "/chat"]}
+@app.get("/app")
+def serve_ui():
+    # Get absolute path to templates folder
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    template_path = os.path.join(base_dir, "templates", "index.html")
+    return FileResponse(template_path)
 
 @app.get("/properties")
 def get_properties(limit: int=20):
