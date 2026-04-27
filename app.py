@@ -50,15 +50,15 @@ def serve_ui():
     template_path = os.path.join(base_dir, "templates", "index.html")
     return FileResponse(template_path)
 
-@app.get("/debug")
-def debug():
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    template_path = os.path.join(base_dir, "templates", "index.html")
+@app.get("/debug-env")
+def debug_env():
+    import os
     return {
-        "base_dir": base_dir,
-        "template_path": template_path,
-        "file_exists": os.path.exists(template_path),
-        "files_in_dir": os.listdir(base_dir)
+        "MYSQLHOST": os.getenv("MYSQLHOST"),
+        "MYSQLUSER": os.getenv("MYSQLUSER"),
+        "MYSQLDATABASE": os.getenv("MYSQLDATABASE"),
+        "MYSQLPORT": os.getenv("MYSQLPORT"),
+        "GROQ_KEY_SET": bool(os.getenv("GROQ_API_KEY"))
     }
 
 @app.get("/properties")
