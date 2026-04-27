@@ -51,15 +51,6 @@ def serve_ui():
     return FileResponse(template_path)
 
 @app.get("/debug-env")
-def debug_env():
-    import os
-    return {
-        "MYSQLHOST": os.getenv("MYSQLHOST"),
-        "MYSQLUSER": os.getenv("MYSQLUSER"),
-        "MYSQLDATABASE": os.getenv("MYSQLDATABASE"),
-        "MYSQLPORT": os.getenv("MYSQLPORT"),
-        "GROQ_KEY_SET": bool(os.getenv("GROQ_API_KEY"))
-    }
 
 @app.get("/properties")
 def get_properties(limit: int=20):
