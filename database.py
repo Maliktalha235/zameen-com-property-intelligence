@@ -8,7 +8,7 @@ def get_connection():
     return mysql.connector.connect(
         host=os.getenv("DB_HOST"),
         user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
+        password=os.getenv("DB_PASS"),
         database=os.getenv("DB_NAME"),
         port=int(os.getenv("DB_PORT", 3306)),
         auth_plugin="mysql_native_password"
@@ -30,7 +30,9 @@ def create_table():
         property_type varchar(50),
         listing_date varchar(100),
         page_url text,
-        scraped_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"""
+        phone Varchar(20),
+        scraped_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        sentiment_label VARCHAR(20))"""
     cursor.execute(query)
     conn.commit()
     cursor.close()
