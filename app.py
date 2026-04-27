@@ -42,12 +42,24 @@ def fetch_data(query,params=None):
 def home():
     return{ "message":"Zameen property Intelligence API",
            "endpoints":["/properties", "/search", "/stats", "/city", "/deals", "/chat"]}
+
 @app.get("/app")
 def serve_ui():
     # Get absolute path to templates folder
     base_dir = os.path.dirname(os.path.abspath(__file__))
     template_path = os.path.join(base_dir, "templates", "index.html")
     return FileResponse(template_path)
+
+@app.get("/debug")
+def debug():
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    template_path = os.path.join(base_dir, "templates", "index.html")
+    return {
+        "base_dir": base_dir,
+        "template_path": template_path,
+        "file_exists": os.path.exists(template_path),
+        "files_in_dir": os.listdir(base_dir)
+    }
 
 @app.get("/properties")
 def get_properties(limit: int=20):
