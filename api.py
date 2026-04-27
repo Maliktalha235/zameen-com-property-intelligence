@@ -4,6 +4,10 @@ from database import get_connection
 from groq import Groq
 from typing import List
 from pydantic import BaseModel
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app=FastAPI(title="Zameen Property Intelligence API")
 app.add_middleware(
@@ -131,7 +135,7 @@ def chat(request: ChatRequest):
         for r in data:
             context += f"{r[2]}|{r[1]}|{r[3]}|{r[4]}beds|{r[7]}|Ph:{r[8]}\n"
 
-        client = Groq(api_key="your-groq-key")
+        client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
         messages = [
             {"role": "system", "content": f"""You are a real estate assistant for Zameen Property Intelligence system.

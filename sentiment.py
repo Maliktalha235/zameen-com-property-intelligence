@@ -1,7 +1,11 @@
 from groq import Groq 
 from database import get_connection
+import os
+from dotenv import load_dotenv
 
-client=Groq(api_key="your groq key")
+load_dotenv()
+
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 def get_sentiment(title,price, location):
     prompt= f"Property:{title} | Price: {price} | Location: {location}. Is this a Good Deal, Fair Deal, or Expensive? Reply with only one: GoodDeal, FairDeal, or Expensive."
