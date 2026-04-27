@@ -11,7 +11,7 @@ run_scraper()
 print("\n[2/2] Analyzing deals...")
 analyze_properties()
 
-print("\nDone! Run: uvicorn api:app --reload")
+print("\nDone! Run: uvicorn app:app --reload")
 print("\nAPI Endpoints:")
 print("  /properties        → all properties")
 print("  /search?city=Lahore → filter by city")
